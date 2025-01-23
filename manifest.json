@@ -1,0 +1,38 @@
+{
+  "manifest_version": 1,
+  "name": "Undetectable Ad Blocker",
+  "author": "Alysson Ferreira",
+  "version": "1.0",
+  "description": "Lightweight, privacy-focused ad blocking",
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
+
+// background.js
+const BLOCK_LISTS = [
+  // Common ad and tracking domains
+  '*://*.doubleclick.net/*',
+  '*://*.googlesyndication.com/*',
+  '*://*.google-analytics.com/*',
+  '*://ads.*.com/*',
+  '*://*tracking.*.com/*'
+];
+
+chrome.webRequest.onBeforeRequest.addListener(
+  (details) => {
+    // Block known ad/tracking domains
+    const isBlockedDomain = BLOCK_LISTS.some(
+      pattern => pattern.match(details.url)
+    );
+    
+    return { cancel: isBlockedDomain };
+  },
+  { urls: ["<all_urls>"] },
+  ["blocking"]
+);
