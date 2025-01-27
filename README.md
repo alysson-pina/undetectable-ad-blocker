@@ -1,1 +1,0 @@
-# undetectable-ad-blocker

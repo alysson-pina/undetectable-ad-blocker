@@ -2,11 +2,25 @@
 const AdBlocker = {
   // Selectors for common ad elements
   adSelectors: [
-    'div[class*="ad"]',
+    'div[class^="ad"]',
     'div[id*="advertisement"]', 
+    'div[id*="google_ads"]', 
     '.banner-ad',
     '[data-ad-type]',
-    'iframe[src*="ads"]'
+    'iframe[src*="ads"]',
+    '#ad',
+    '#google_ads_iframe_',
+    '[id^="ad-"]',
+    '[id^="bnr"]',
+    'div[class="videoAdUi"]',
+     'div[class="fc-dialog-container"]',
+
+    // Attribute-based selectors
+    '[data-ad="true"]',
+    '[aria-label="Sponsored Ad"]',
+    
+    // Specific complex selectors for Amazon-like ads
+    'div[style*="width:100%;height:100%"] > div[class="creative-container"]'
   ],
 
   // Remove ad elements
@@ -42,21 +56,36 @@ const AdBlocker = {
 
   // Initialize blocking
   init() {
+    // Ensure DOM is fully loaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.setupObserver());
+    } else {
+      this.setupObserver();
+    }
+  },
+
+  setupObserver() {
     this.removeAds();
     this.blockIntrusiveContent();
     
-    // Optional: Use MutationObserver for dynamically loaded content
+    // dynamically listen for new content being appended to the DOM
     const observer = new MutationObserver(() => {
       this.removeAds();
       this.blockIntrusiveContent();
     });
 
-    observer.observe(document.body, { 
-      childList: true, 
-      subtree: true 
-    });
+    // Ensure document.body exists before observing
+    if (document.body) {
+      observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+      });
+    } else {
+      console.warn('document.body is not available.');
+    }
   }
 };
 
 // Run on page load
 AdBlocker.init();
+window.addEventListener('load', () => AdBlocker.init());
