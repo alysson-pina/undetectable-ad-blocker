@@ -14,6 +14,7 @@ const AdBlocker = {
     '[id^="bnr"]',
     'div[class="videoAdUi"]',
      'div[class="fc-dialog-container"]',
+     'div[class="mobiliarioAdblock"]',
 
     // Attribute-based selectors
     '[data-ad="true"]',
@@ -56,12 +57,23 @@ const AdBlocker = {
 
   // Initialize blocking
   init() {
-    // Ensure DOM is fully loaded
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.setupObserver());
-    } else {
-      this.setupObserver();
-    }
+    chrome.storage.sync.get("pausedSites", ({ pausedSites = [] }) => {
+      const currentDomain = window.location.hostname;
+  
+      if (pausedSites.includes(currentDomain)) {
+        console.log(`AdBlocker paused on ${currentDomain}`);
+        return;
+      }
+  
+      console.log(`AdBlocker active on ${currentDomain}`);
+  
+      // Ensure DOM is fully loaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this.setupObserver());
+      } else {
+        this.setupObserver();
+      }
+    });
   },
 
   setupObserver() {
