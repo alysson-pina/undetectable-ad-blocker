@@ -4,8 +4,12 @@
   "version": "1.0",
   "description": "Lightweight, privacy-focused ad blocking",
   "permissions": [
+    "contextMenus",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "tabs",
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "*://*/*"
@@ -21,12 +25,16 @@
     "service_worker": "background.js"
   },
   "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ruleset_1",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
+    "rule_resources": []
+  },
+  "icons": {
+    "48": "icons/icon32.png",
+    "32": "icons/icon32.png"
+  },
+  "action": {
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "48": "icons/icon32.png"
+    }
   }
 }
