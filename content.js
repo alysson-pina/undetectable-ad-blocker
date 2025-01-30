@@ -99,5 +99,15 @@ const AdBlocker = {
 };
 
 // Run on page load
-AdBlocker.init();
-window.addEventListener('load', () => AdBlocker.init());
+chrome.storage.sync.get("whitelist", ({ whitelist = [] }) => {
+  const currentDomain = window.location.hostname;
+
+  if (whitelist.includes(currentDomain)) {
+    console.log(`Ad blocking skipped on ${currentDomain} (whitelisted)`);
+    return;
+  }
+
+  AdBlocker.init(); // Run ad blocker if not whitelisted
+  window.addEventListener('load', () => AdBlocker.init());
+});
+

@@ -51,11 +51,11 @@ function updateContextMenu(tab) {
   const url = new URL(tab.url);
   const domain = url.hostname;
 
-  chrome.storage.sync.get("pausedSites", ({ pausedSites = [] }) => {
-    const isPaused = pausedSites.includes(domain);
+  chrome.storage.sync.get("whitelist", ({ whitelist = [] }) => {
+    const isPaused = whitelist.includes(domain);
 
     // Update the context menu title
-    chrome.contextMenus.update("togglePause", {
+    chrome.contextMenus.update("toggleWhitelist", {
       title: isPaused ? `Resume on ${domain}` : `Pause on ${domain}`
     });
   });
@@ -65,10 +65,10 @@ function initAdBlocker() {
   const domain = window.location.hostname;
 
   const observer = new MutationObserver((mutations) => {
-    chrome.storage.sync.get("pausedSites", ({ pausedSites = [] }) => {
-      const isPaused = pausedSites.includes(domain);
+    chrome.storage.sync.get("whitelist", ({ whitelist = [] }) => {
+      const isWhiteListed = whitelist.includes(domain);
 
-      if (!isPaused) {
+      if (!isWhiteListed) {
         BLOCK_STRATEGIES.REMOVE_BY_CLASS('ad-container');
         BLOCK_STRATEGIES.REMOVE_BY_ID('banner-ad');
         BLOCK_STRATEGIES.REMOVE_BY_ID('ad');
@@ -127,10 +127,19 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
 });
 
 // Initialize the context menu
-chrome.runtime.onInstalled.addListener(async () => {  
+chrome.runtime.onInstalled.addListener(async () => {
+  chrome.storage.sync.get("whitelist", ({ whitelist = [] }) => {
+    const defaultSites = ["mail.google.com"];
+    const updatedWhitelist = [...new Set([...whitelist, ...defaultSites])];
+
+    chrome.storage.sync.set({ whitelist: updatedWhitelist }, () => {
+      console.log("Whitelist initialized with:", updatedWhitelist);
+    });
+  });
+
   chrome.contextMenus.create({
-    id: "togglePause",
-    title: "Pause on this site",
+    id: "toggleWhitelist",
+    title: "Add this site to whitelist",
     contexts: ["page", "action"] // Attach menu to the extension's toolbar icon
   });
 
@@ -151,18 +160,18 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
 
 // Handle menu item clicks
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (!info.menuItemId === "togglePause" || !tab || !isValidUrl(tab.url)) return;
+  if (!info.menuItemId === "toggleWhitelist" || !tab || !isValidUrl(tab.url)) return;
 
   try {
     const url = new URL(tab.url);
     const domain = url.hostname;
-    const { pausedSites = [] } = await chrome.storage.sync.get("pausedSites");
-    const isPaused = pausedSites.includes(domain);
+    const { whitelist = [] } = await chrome.storage.sync.get("whitelist");
+    const isWhiteListed = whitelist.includes(domain);
 
-    if (isPaused) {
+    if (isWhiteListed) {
       // Remove the domain from paused sites
-      const updatedSites = pausedSites.filter(site => site !== domain);
-      await chrome.storage.sync.set({ pausedSites: updatedSites });
+      const updatedSites = whitelist.filter(site => site !== domain);
+      await chrome.storage.sync.set({ whitelist: updatedSites });
 
       // Remove DNR rules for this domain
       const ruleId = getRuleIdForDomain(domain);
@@ -172,11 +181,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         console.log(`Removed rule ID: ${ruleId}`);
       }).catch(error => console.error("Error removing rule:", error));;
 
-      console.log(`${domain} resumed. Updated sites:`, updatedSites);
+      console.log(`${domain} removed from whitelist. Updated sites:`, updatedSites);
     } else {
       // Add the domain to paused sites
-      const updatedSites = [...pausedSites, domain];
-      chrome.storage.sync.set({ pausedSites: updatedSites });
+      const updatedSites = [...whitelist, domain];
+      chrome.storage.sync.set({ whitelist: updatedSites });
 
       // Add a blocking rule for this domain
       const rule = createPauseRule(domain);
@@ -186,7 +195,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         console.log(`Removed rule ID: ${ruleId}`);
       }).catch(error => console.error("Error removing rule:", error));
 
-      console.log(`${domain} paused. Updated sites:`, updatedSites);
+      console.log(`${domain} added to the whitelist. Updated sites:`, updatedSites);
     }
 
     chrome.tabs.reload(tab.id);
