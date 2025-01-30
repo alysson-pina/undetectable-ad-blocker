@@ -29,7 +29,7 @@ function hashCode(str) {
 
 // Generate a unique rule ID for each domain
 function getRuleIdForDomain(domain) {
-  return Math.abs(hashCode(domain)) + 1;
+  return parseInt(Math.abs(hashCode(domain))) + 1;
 };
 // Create a pause rule for the domain
 function createPauseRule(domain) {
@@ -168,7 +168,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       const ruleId = getRuleIdForDomain(domain);
       await chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [ruleId]
-      });
+      }).then(() => {
+        console.log(`Removed rule ID: ${ruleId}`);
+      }).catch(error => console.error("Error removing rule:", error));;
 
       console.log(`${domain} resumed. Updated sites:`, updatedSites);
     } else {
@@ -180,7 +182,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       const rule = createPauseRule(domain);
       await chrome.declarativeNetRequest.updateDynamicRules({
         addRules: [rule]
-      });
+      }).then(() => {
+        console.log(`Removed rule ID: ${ruleId}`);
+      }).catch(error => console.error("Error removing rule:", error));
+
       console.log(`${domain} paused. Updated sites:`, updatedSites);
     }
 
